@@ -1,6 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet } from "react-native";
 import React from "react";
-import { Button, TextInput } from "react-native-web";
 import { useState } from "react";
 import ShowAvg from "./ShowAvg";
 
@@ -12,41 +11,32 @@ const Calculator = () => {
     password: "",
   });
 
-  const [subjectMarksData, setsubjectMarksData] = useState({
+  const [subjectMarks, setSubjectMarks] = useState({
     subject_one: "",
     subject_two: "",
     subject_three: "",
   });
 
   const [average, setAverage] = useState(0.0);
+  const [error, setError] = useState(false);
 
-  const getStudnetData = (event, name) => {
+  const getStudentDetails = (text, key) => {
     try {
-      const { value } = event.target;
-      const keyExist = studentData.hasOwnProperty(name);
-      if (keyExist) {
-        const obj = {};
-        obj[name] = value;
-        setStudentData({ ...studentData, ...obj });
-      }
+      setStudentData((prevState) => ({
+        ...prevState,
+        [key]: text,
+      }));
     } catch (error) {
       console.log("error", error);
     }
   };
 
-  const getSubjectMarkData = (event, marks) => {
+  const getSubjectMarks = (text, key) => {
     try {
-      const { value } = event.target;
-      const keyExist = subjectMarksData.hasOwnProperty(marks);
-      if (keyExist) {
-        if (!isNaN(value)) {
-          const obj = {};
-          obj[marks] = value;
-          setsubjectMarksData({ ...subjectMarksData, ...obj });
-        } else {
-          // Alert
-        }
-      }
+      setSubjectMarks((prevState) => ({
+        ...prevState,
+        [key]: text,
+      }));
     } catch (error) {
       console.log("error", error);
     }
@@ -55,73 +45,90 @@ const Calculator = () => {
   const calculateAverage = () => {
     try {
       let total = 0;
-      let marks = Object.values(subjectMarksData);
-
-      marks.map((index, value) => {
-        total += parseInt(index);
+      let validMarksCount = 0;
+      const obj = Object.entries(subjectMarks);
+  
+      setError(null);
+  
+      obj.forEach(([subject, mark]) => {
+        const parsedMark = parseFloat(mark);
+  
+        if (isNaN(parsedMark)) {
+          console.log("Invalid mark:", mark);
+          window.alert(
+            `Invalid input detected for ${subject.replace("_", " ")}. Please enter valid numbers.`
+          );
+          return;
+        }
+  
+        total += parsedMark;
+        validMarksCount++; 
       });
-      let average = total / 3;
+  
+      const average = validMarksCount > 0 ? total / validMarksCount : 0;
       setAverage(average.toFixed(2));
     } catch (error) {
       console.log("error", error);
     }
-  };
+  };  
 
   return (
     <View style={styles.mainStyle}>
-      <Text style={styles.headinText}>Student Resgistration</Text>
+      <Text style={styles.headingText}>Student Registration</Text>
 
       <TextInput
         placeholder="First Name"
         style={styles.textInput}
-        onChange={(e) => getStudnetData(e, "first_name")}
+        onChangeText={(text) => getStudentDetails(text, "first_name")}
       />
       <TextInput
         placeholder="Last Name"
         style={styles.textInput}
-        onChange={(e) => getStudnetData(e, "last_name")}
+        onChangeText={(text) => getStudentDetails(text, "last_name")}
       />
       <TextInput
         placeholder="Email"
-        keyboardType="email-address"
         style={styles.textInput}
-        onChange={(e) => getStudnetData(e, "email")}
+        keyboardType="email-address"
+        autoComplete="email"
+        onChangeText={(text) => getStudentDetails(text, "email")}
       />
       <TextInput
-        placeholder="Passord"
-        keyboardType="password"
-        secureTextEntry={true}
+        placeholder="Password"
         style={styles.textInput}
-        onChange={(e) => getStudnetData(e, "password")}
+        secureTextEntry={true}
+        onChangeText={(text) => getStudentDetails(text, "password")}
       />
 
-      <Text style={styles.headinText}>Enter Marks</Text>
+      <Text style={styles.headingText}>Enter Marks</Text>
 
       <TextInput
         placeholder="Subject 1 Marks"
         style={styles.textInput}
-        onChange={(e) => getSubjectMarkData(e, "subject_one")}
+        keyboardType="numeric"
+        onChangeText={(text) => getSubjectMarks(text, "subject_one")}
       />
       <TextInput
         placeholder="Subject 2 Marks"
         style={styles.textInput}
-        onChange={(e) => getSubjectMarkData(e, "subject_two")}
+        keyboardType="numeric"
+        onChangeText={(text) => getSubjectMarks(text, "subject_two")}
       />
       <TextInput
         placeholder="Subject 3 Marks"
         style={styles.textInput}
-        onChange={(e) => getSubjectMarkData(e, "subject_three")}
+        keyboardType="numeric"
+        onChangeText={(text) => getSubjectMarks(text, "subject_three")}
       />
 
       <View style={{ width: "100%" }}>
         <Button
-          title="REGISTER & CALCULATOR AVERAGE"
-          style={styles.button}
+          title="REGISTER & CALCULATE AVERAGE"
           onPress={() => calculateAverage()}
         />
       </View>
 
-      <ShowAvg average={average} />
+      {!error && average && studentData && <ShowAvg average={average} student={studentData} />}
     </View>
   );
 };
@@ -135,7 +142,7 @@ const styles = StyleSheet.create({
     margin: "20px",
   },
 
-  headinText: {
+  headingText: {
     fontSize: "2rem",
     fontWeight: "bold",
   },
